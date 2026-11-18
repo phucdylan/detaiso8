@@ -1,17 +1,17 @@
+
 const credentialSecret = process.env.NODE_RED_CREDENTIAL_SECRET;
-
-if (!credentialSecret) {
-    throw new Error("Missing NODE_RED_CREDENTIAL_SECRET environment variable");
-}
-
 const adminPasswordHash = process.env.NODE_RED_ADMIN_PASSWORD_HASH;
 
+if (!credentialSecret) {
+    throw new Error("Missing NODE_RED_CREDENTIAL_SECRET");
+}
+
 if (!adminPasswordHash) {
-    throw new Error("Missing NODE_RED_ADMIN_PASSWORD_HASH environment variable");
+    throw new Error("Missing NODE_RED_ADMIN_PASSWORD_HASH");
 }
 
 module.exports = {
-    uiPort: process.env.PORT || 1880,
+    uiPort: process.env.PORT || 10000,
     uiHost: "0.0.0.0",
 
     credentialSecret: credentialSecret,
