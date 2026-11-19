@@ -39,19 +39,6 @@
         "width": 6
     },
     {
-        "id": "broker_local",
-        "type": "mqtt-broker",
-        "name": "Mosquitto Local",
-        "broker": "127.0.0.1",
-        "port": "1883",
-        "clientid": "",
-        "autoConnect": true,
-        "usetls": false,
-        "protocolVersion": "4",
-        "keepalive": "60",
-        "cleansession": true
-    },
-    {
         "id": "be7f6ea349a67385",
         "type": "ui_base",
         "theme": {
@@ -454,14 +441,14 @@
     {
         "id": "476c2ac9ccb44c46",
         "type": "mqtt-broker",
-        "name": "Mosquitto Local",
-        "broker": "localhost",
-        "port": "1883",
+        "name": "CloudAMQP",
+        "broker": "armadillo.rmq.cloudamqp.com",
+        "port": "8883",
         "clientid": "",
         "autoConnect": true,
-        "usetls": false,
+        "usetls": true,
         "protocolVersion": "4",
-        "keepalive": "60",
+        "keepalive": "30",
         "cleansession": true,
         "autoUnsubscribe": true,
         "birthTopic": "",
@@ -472,7 +459,8 @@
         "closePayload": "",
         "willTopic": "",
         "willQos": "0",
-        "willPayload": ""
+        "willPayload": "",
+        "tls": "cdd95a246dd5d085"
     },
     {
         "id": "9e7605fdd8fe4459",
