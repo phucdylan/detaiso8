@@ -2,9 +2,9 @@ FROM nodered/node-red:5.0.9
 
 WORKDIR /data
 
-COPY package.json package-lock.json /data/
+COPY package.json /data/package.json
 
-RUN npm ci --no-audit --no-fund --omit=dev
+RUN npm install --no-update-notifier --no-fund --omit=dev
 
 WORKDIR /usr/src/node-red
 
