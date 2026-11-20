@@ -1,0 +1,39 @@
+# Environment & secrets
+.env
+.env.*
+!.env.example
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-error.log*
+package-lock.json.bak
+
+# Node-RED runtime (không bao giờ commit)
+flows_cred.json
+*_cred.json
+.config.runtime.json
+.sessions.json
+.flows.json.backup*
+.config.nodes.json
+.config.users.json
+
+# OS & logs
+.DS_Store
+Thumbs.db
+*.log
+tmp/
+temp/
+.cache/
+
+# Firmware artifacts
+*.bin
+*.elf
+*.hex
+*.map
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*~
