@@ -1,39 +1,36 @@
-# Environment & secrets
+
+# Environment and secrets
 .env
 .env.*
 !.env.example
+secrets.h
+secrets.local.h
 
 # Node.js
 node_modules/
 npm-debug.log*
-yarn-error.log*
-package-lock.json.bak
+yarn-debug.log*
+pnpm-debug.log*
 
-# Node-RED runtime (không bao giờ commit)
+# Node-RED credentials
 flows_cred.json
 *_cred.json
+
+# Runtime and logs
 .config.runtime.json
-.sessions.json
-.flows.json.backup*
-.config.nodes.json
-.config.users.json
-
-# OS & logs
-.DS_Store
-Thumbs.db
 *.log
-tmp/
-temp/
-.cache/
 
-# Firmware artifacts
+# Arduino / ESP32 build files
+build/
 *.bin
 *.elf
-*.hex
 *.map
+*.o
+*.a
+*.hex
 
-# IDE
+# IDE and system files
 .vscode/
 .idea/
-*.swp
-*~
+.DS_Store
+Thumbs.db
