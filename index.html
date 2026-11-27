@@ -28,6 +28,7 @@ header{background:var(--header);color:#fff;padding:10px 16px;display:flex;align-
 .btn.outline{background:#fff;border:1px solid var(--line);color:#23436e}
 .btn:disabled{opacity:.5;cursor:default}
 .btn.sm{padding:5px 9px;font-size:11px}
+.btn.danger{background:#d14343;color:#fff}
 .gps-status{font-size:11px;color:var(--muted)}
 .gps-status.on{color:#087a56;font-weight:600}
 
@@ -38,6 +39,9 @@ header{background:var(--header);color:#fff;padding:10px 16px;display:flex;align-
 .list-panel{background:var(--card);border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
 .panelhead{padding:10px 12px;border-bottom:1px solid var(--line);font-weight:700;font-size:13px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;gap:8px}
 .panelhead .head-actions{display:flex;gap:6px;align-items:center}
+.search-box{padding:8px 10px;border-bottom:1px solid var(--line);flex-shrink:0}
+.search-box input{width:100%;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px;outline:none}
+.search-box input:focus{border-color:#8db3ff}
 .station-list{flex:1;overflow:auto;padding:8px;display:grid;gap:7px;align-content:start}
 .station{border:1px solid var(--line);border-radius:10px;padding:10px;cursor:pointer;background:#fff;transition:border-color .12s,background .12s}
 .station:hover,.station.active{border-color:#8db3ff;background:#f5f9ff}
@@ -49,7 +53,7 @@ header{background:var(--header);color:#fff;padding:10px 16px;display:flex;align-
 .pill.fault,.pill.offline{background:#ffeded;color:#b83232}
 .pill.unknown{background:#eef1f5;color:#68758a}
 .small{font-size:11px;color:var(--muted);margin-top:3px}
-.meta{display:flex;gap:10px;margin-top:5px;font-size:11px;color:#536177}
+.meta{display:flex;gap:10px;margin-top:5px;font-size:11px;color:#536177;flex-wrap:wrap}
 .empty{padding:18px;color:var(--muted);text-align:center;font-size:12px}
 
 /* Map panel */
@@ -65,7 +69,7 @@ header{background:var(--header);color:#fff;padding:10px 16px;display:flex;align-
   position:absolute;left:12px;right:12px;bottom:12px;z-index:10;
   background:#fff;border-radius:14px;box-shadow:0 8px 28px #0f1c3528;
   border:1px solid var(--line);padding:12px 14px;
-  max-height:42%;overflow:auto;
+  max-height:48%;overflow:auto;
   transform:translateY(110%);opacity:0;pointer-events:none;
   transition:transform .25s ease,opacity .2s ease;
 }
@@ -100,6 +104,17 @@ header{background:var(--header);color:#fff;padding:10px 16px;display:flex;align-
 .routeinfo b{color:var(--ink)}
 .act-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
 .notice{font-size:11px;color:#66758b;margin-top:6px;padding:6px 8px;background:#f4f7fb;border-radius:7px}
+.queue-box{margin:8px 0;padding:10px;border-radius:10px;background:#f0f7ff;border:1px solid #cfe0f5}
+.queue-box .qtitle{font-size:12px;font-weight:700;margin-bottom:6px;color:#1e40af}
+.queue-box .qrow{display:flex;justify-content:space-between;gap:8px;font-size:12px;margin:3px 0}
+.queue-box .qstatus{font-weight:700}
+.queue-box .qstatus.waiting{color:#1d4ed8}
+.queue-box .qstatus.called{color:#b7791f}
+.queue-box .qstatus.serving{color:#087a56}
+.queue-box .qstatus.cancelled,.queue-box .qstatus.completed{color:#68758a}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:#101d35;color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;z-index:100;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;max-width:90%;text-align:center}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.err{background:#9b2c2c}
 .maplibregl-popup-content{padding:9px 11px;border-radius:9px;font-size:12px}
 .popname{font-weight:800;margin-bottom:2px}
 .popstatus{font-size:11px;color:#58677d}
@@ -110,7 +125,7 @@ header{background:var(--header);color:#fff;padding:10px 16px;display:flex;align-
   .main{grid-template-columns:1fr;grid-template-rows:1fr auto}
   .list-panel{order:2;max-height:34vh;border-right:0;border-top:1px solid var(--line)}
   .map-panel{order:1;min-height:48vh}
-  .detail-card{max-height:50%;left:8px;right:8px;bottom:8px}
+  .detail-card{max-height:55%;left:8px;right:8px;bottom:8px}
   .dgrid{grid-template-columns:1fr 1fr}
   .act-row{grid-template-columns:1fr 1fr}
   .toolbar h1{display:none}
@@ -145,6 +160,9 @@ header{background:var(--header);color:#fff;padding:10px 16px;display:flex;align-
         <button id="overviewBtn" class="btn outline sm" title="Xem toàn bộ bản đồ">Overview</button>
       </div>
     </div>
+    <div class="search-box">
+      <input id="searchInput" type="search" placeholder="Tìm theo tên hoặc mã trạm…" autocomplete="off">
+    </div>
     <div id="stationList" class="station-list">
       <div class="empty">Đang tải dữ liệu trạm…</div>
     </div>
@@ -169,6 +187,8 @@ header{background:var(--header);color:#fff;padding:10px 16px;display:flex;align-
   </section>
 </div>
 
+<div id="toast" class="toast"></div>
+
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script>
 /* ========== CONFIG ========== */
@@ -177,8 +197,11 @@ const API_URL  = API_BASE + '/api/user/stations';
 const MAP_STYLE = 'https://tiles.openfreemap.org/styles/liberty';
 const OSRM_BASE = 'https://router.project-osrm.org';
 const REFRESH_MS = 15000;
+const QUEUE_POLL_MS = 12000;
 const ROUTE_MIN_DIST_M = 80;
 const ROUTE_MIN_INTERVAL_MS = 15000;
+const GUEST_KEY = 'ev_guest_id';
+const QUEUE_KEY = 'ev_my_queues';
 
 const TEMP_COORDS = {
   1: { lat: 10.849900, lng: 106.771700, label: 'Cổng Võ Văn Ngân · HCM-UTE', temporary: true },
@@ -199,8 +222,45 @@ let watchId = null;
 let watching = false;
 let routeMode = 'driving';
 let currentRoute = null;
+let searchQuery = '';
+let myQueues = loadMyQueues(); // { [stationId]: { queueId, status, position, ... } }
+let queuePollTimer = null;
 
 const $ = id => document.getElementById(id);
+
+/* ========== GUEST ID ========== */
+function getGuestId() {
+  let id = localStorage.getItem(GUEST_KEY);
+  if (!id || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) {
+    id = (crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+      const r = Math.random() * 16 | 0;
+      const v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    }));
+    localStorage.setItem(GUEST_KEY, id);
+  }
+  return id;
+}
+
+function loadMyQueues() {
+  try {
+    const raw = localStorage.getItem(QUEUE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch (_) { return {}; }
+}
+
+function saveMyQueues() {
+  try { localStorage.setItem(QUEUE_KEY, JSON.stringify(myQueues)); } catch (_) {}
+}
+
+function setMyQueue(stationId, data) {
+  if (!data) {
+    delete myQueues[String(stationId)];
+  } else {
+    myQueues[String(stationId)] = data;
+  }
+  saveMyQueues();
+}
 
 /* ========== HELPERS ========== */
 function escapeHtml(v) {
@@ -208,14 +268,17 @@ function escapeHtml(v) {
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 function statusInfo(s) {
+  const conn = String(s.connectionStatus || '').toUpperCase();
   const v = String(s.status || s.operatingStatus || 'UNKNOWN').toUpperCase();
+  if (conn === 'OFFLINE' || v === 'OFFLINE') return ['Ngoại tuyến', 'offline'];
   if (v === 'AVAILABLE') return ['Sẵn sàng', 'available'];
   if (v === 'CHARGING')  return ['Đang có xe sạc', 'charging'];
   if (v === 'FAULT')     return ['Đang gặp lỗi', 'fault'];
-  if (v === 'OFFLINE')   return ['Ngoại tuyến', 'offline'];
   return ['Chưa có dữ liệu', 'unknown'];
 }
 function safeStatus(s) {
+  const conn = String(s.connectionStatus || '').toUpperCase();
+  if (conn === 'OFFLINE') return 'OFFLINE';
   return String(s.status || s.operatingStatus || 'UNKNOWN').toUpperCase();
 }
 function coordsOf(s) {
@@ -228,8 +291,6 @@ function coordsOf(s) {
 function money(v) {
   return Number(v) > 0 ? Number(v).toLocaleString('vi-VN') + ' ₫' : '—';
 }
-
-/** Trả về { price, label, tagClass } theo giờ hiện tại */
 function currentTariff(t) {
   if (!t) return { price: null, label: 'Chưa có giá', tagClass: '' };
   const now = new Date();
@@ -239,17 +300,14 @@ function currentTariff(t) {
     const [h, m] = s.split(':').map(Number);
     return (Number.isFinite(h) ? h : 0) * 60 + (Number.isFinite(m) ? m : 0);
   };
-  const lowStart  = parse(t.lowStart, 0);      // 00:00
-  const lowEnd    = parse(t.lowEnd, 6 * 60);   // 06:00
-  const peakStart = parse(t.peakStart, 17 * 60 + 30); // 17:30
-  const peakEnd   = parse(t.peakEnd, 22 * 60 + 30);   // 22:30
-
-  // Xử lý khung qua nửa đêm (low thường 00:00–06:00)
+  const lowStart  = parse(t.lowStart, 0);
+  const lowEnd    = parse(t.lowEnd, 6 * 60);
+  const peakStart = parse(t.peakStart, 17 * 60 + 30);
+  const peakEnd   = parse(t.peakEnd, 22 * 60 + 30);
   const inRange = (start, end) => {
     if (start <= end) return mins >= start && mins < end;
-    return mins >= start || mins < end; // qua ngày
+    return mins >= start || mins < end;
   };
-
   if (Number(t.low) > 0 && inRange(lowStart, lowEnd)) {
     return { price: Number(t.low), label: 'Thấp điểm', tagClass: 'low' };
   }
@@ -259,7 +317,6 @@ function currentTariff(t) {
   if (Number(t.normal) > 0) {
     return { price: Number(t.normal), label: 'Bình thường', tagClass: '' };
   }
-  // Fallback nếu chỉ có 1 mức
   const any = Number(t.low) || Number(t.normal) || Number(t.peak) || null;
   return { price: any, label: any ? 'Hiện tại' : 'Chưa có giá', tagClass: '' };
 }
@@ -270,6 +327,7 @@ function haversineM(lat1, lng1, lat2, lng2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 function formatDistance(m) {
+  if (!Number.isFinite(m)) return '—';
   return m < 1000 ? Math.round(m) + ' m' : (m / 1000).toFixed(1) + ' km';
 }
 function formatDuration(s) {
@@ -278,13 +336,37 @@ function formatDuration(s) {
   if (min < 60) return min + ' phút';
   return Math.floor(min / 60) + ' giờ ' + (min % 60 ? (min % 60) + ' phút' : '');
 }
+function queueStatusLabel(st) {
+  const v = String(st || '').toUpperCase();
+  if (v === 'WAITING') return 'Đang chờ';
+  if (v === 'CALLED') return 'Được gọi vào sạc';
+  if (v === 'SERVING') return 'Đang được phục vụ';
+  if (v === 'COMPLETED') return 'Hoàn tất';
+  if (v === 'CANCELLED') return 'Đã hủy';
+  return v || '—';
+}
+function showToast(msg, isError) {
+  const el = $('toast');
+  el.textContent = msg;
+  el.classList.toggle('err', !!isError);
+  el.classList.add('show');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => el.classList.remove('show'), 3200);
+}
 
 /* ========== API ========== */
 async function loadStations() {
   $('apiState').textContent = 'Đang tải…';
   $('apiState').style.color = '';
   try {
-    const r = await fetch(API_URL, { headers: { 'Accept': 'application/json' }, cache: 'no-store' });
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 12000);
+    const r = await fetch(API_URL, {
+      headers: { 'Accept': 'application/json' },
+      cache: 'no-store',
+      signal: ctrl.signal
+    });
+    clearTimeout(t);
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const data = await r.json();
     stations = Array.isArray(data) ? data : (data.stations || []);
@@ -292,46 +374,70 @@ async function loadStations() {
     $('apiState').style.color = '#087a56';
     renderList();
     updateMarkers();
-    // Không tự chọn / zoom trạm khi tải; chỉ giữ selection nếu user đang xem
     if (selectedId !== null) {
       const s = stations.find(x => Number(x.id) === Number(selectedId));
       if (s) showDetail(s);
     }
   } catch (e) {
+    const msg = e.name === 'AbortError' ? 'Timeout / API chậm' : e.message;
     $('apiState').textContent = 'Lỗi API';
     $('apiState').style.color = '#b83232';
-    $('stationList').innerHTML = `<div class="empty">Không tải được API<br><small>${escapeHtml(e.message)}</small></div>`;
+    $('stationList').innerHTML = `<div class="empty">Không tải được API<br><small>${escapeHtml(msg)}</small></div>`;
   }
 }
 
 /* ========== LIST ========== */
+function getSortedStations() {
+  let list = stations.slice();
+  const q = searchQuery.trim().toLowerCase();
+  if (q) {
+    list = list.filter(s => {
+      const name = String(s.name || '').toLowerCase();
+      const code = String(s.code || '').toLowerCase();
+      return name.includes(q) || code.includes(q) || String(s.id).includes(q);
+    });
+  }
+  if (userPos) {
+    list.forEach(s => {
+      const c = coordsOf(s);
+      s._dist = c ? haversineM(userPos.lat, userPos.lng, c.lat, c.lng) : Infinity;
+    });
+    list.sort((a, b) => (a._dist || Infinity) - (b._dist || Infinity));
+  }
+  return list;
+}
+
 function renderList() {
-  $('count').textContent = stations.length + ' trạm';
-  if (!stations.length) {
-    $('stationList').innerHTML = '<div class="empty">Chưa có trạm.</div>';
+  const list = getSortedStations();
+  $('count').textContent = list.length + ' trạm';
+  if (!list.length) {
+    $('stationList').innerHTML = '<div class="empty">' + (searchQuery ? 'Không tìm thấy trạm.' : 'Chưa có trạm.') + '</div>';
     return;
   }
-  $('stationList').innerHTML = stations.map(s => {
+  $('stationList').innerHTML = list.map(s => {
     const [label, cls] = statusInfo(s);
     const c = coordsOf(s);
     const cur = currentTariff(s.tariff || {});
     const priceShort = cur.price != null ? Number(cur.price).toLocaleString('vi-VN') + ' ₫' : '—';
+    const dist = (userPos && Number.isFinite(s._dist)) ? formatDistance(s._dist) : null;
+    const mine = myQueues[String(s.id)];
     return `<article class="station ${Number(selectedId) === Number(s.id) ? 'active' : ''}" onclick="selectStation(${Number(s.id)})">
       <div class="stationtop">
         <span class="stationname">${escapeHtml(s.name || 'Trạm sạc')}</span>
         <span class="pill ${cls}">${label}</span>
       </div>
-      <div class="small">${escapeHtml(s.code || '')} · ${c ? (c.label || 'Có vị trí') : 'Chưa có tọa độ'}</div>
+      <div class="small">${escapeHtml(s.code || '')}${c ? (c.label ? ' · ' + escapeHtml(c.label) : '') : ' · Chưa có tọa độ'}${dist ? ' · ' + dist : ''}</div>
       <div class="meta">
         <span>${Number(s.queueCount) || 0} chờ</span>
         <span>${Number(s.estimatedWaitMinutes) || 0} phút</span>
         <span>${priceShort}/kWh</span>
+        ${mine ? `<span style="color:#1d4ed8;font-weight:700">Bạn: ${queueStatusLabel(mine.status)}</span>` : ''}
       </div>
     </article>`;
   }).join('');
 }
 
-/* ========== DETAIL CARD (nổi trên map) ========== */
+/* ========== DETAIL CARD ========== */
 function showDetail(s) {
   const [label] = statusInfo(s);
   const t = s.tariff || {};
@@ -341,6 +447,11 @@ function showDetail(s) {
   const w = Number(s.estimatedWaitMinutes) || 0;
   const cur = currentTariff(t);
   const priceText = cur.price != null ? Number(cur.price).toLocaleString('vi-VN') + ' ₫/kWh' : 'Chưa cập nhật';
+  const power = (s.power_kw != null || s.power != null) ? Number(s.power_kw ?? s.power) : null;
+  const updated = s.updatedAt ? new Date(s.updatedAt).toLocaleString('vi-VN') : 'Chưa cập nhật';
+  const mine = myQueues[String(s.id)];
+  const canJoin = st !== 'FAULT' && st !== 'OFFLINE' && !mine;
+  const canCancel = mine && ['WAITING', 'CALLED'].includes(String(mine.status || '').toUpperCase());
 
   let html = `
     <h3>${escapeHtml(s.name || 'Trạm sạc')} <span class="code">${escapeHtml(s.code || '')}</span></h3>
@@ -348,7 +459,7 @@ function showDetail(s) {
       <div class="dmetric"><b>${label}</b><span>Trạng thái</span></div>
       <div class="dmetric"><b>${q} lượt</b><span>Hàng chờ</span></div>
       <div class="dmetric"><b>${w} phút</b><span>Chờ dự kiến</span></div>
-      <div class="dmetric"><b>${st === 'AVAILABLE' ? 'Tiếp nhận' : st === 'CHARGING' ? 'Đang phục vụ' : 'Không khả dụng'}</b><span>Khả năng</span></div>
+      <div class="dmetric"><b>${power != null && Number.isFinite(power) ? power.toFixed(1) + ' kW' : 'Chưa cập nhật'}</b><span>Công suất</span></div>
     </div>
     <div class="price-now">
       <div>
@@ -362,7 +473,21 @@ function showDetail(s) {
       <div class="price-item"><span>Thấp điểm ${escapeHtml(t.lowStart || '00:00')}–${escapeHtml(t.lowEnd || '06:00')}</span><b>${money(t.low)}</b></div>
       <div class="price-item"><span>Bình thường</span><b>${money(t.normal)}</b></div>
       <div class="price-item"><span>Cao điểm ${escapeHtml(t.peakStart || '17:30')}–${escapeHtml(t.peakEnd || '22:30')}</span><b>${money(t.peak)}</b></div>
-    </div>
+    </div>`;
+
+  // Hàng chờ của tôi
+  if (mine) {
+    const qs = String(mine.status || 'WAITING').toUpperCase();
+    html += `<div class="queue-box">
+      <div class="qtitle">Lượt chờ của bạn</div>
+      <div class="qrow"><span>Trạng thái</span><span class="qstatus ${qs.toLowerCase()}">${escapeHtml(queueStatusLabel(qs))}</span></div>
+      <div class="qrow"><span>Vị trí</span><span>${mine.position != null ? '#' + mine.position : '—'}</span></div>
+      <div class="qrow"><span>Mã lượt</span><span style="font-size:10px;word-break:break-all">${escapeHtml(mine.queueId || '—')}</span></div>
+      ${canCancel ? `<button class="btn danger sm" style="width:100%;margin-top:8px" onclick="cancelQueue(${Number(s.id)})">Hủy lượt chờ</button>` : ''}
+    </div>`;
+  }
+
+  html += `
     <div class="route-row">
       <div class="segment">
         <button class="${routeMode === 'driving' ? 'active' : ''}" onclick="setRouteMode('driving')">🚗 Ô tô</button>
@@ -373,11 +498,16 @@ function showDetail(s) {
     <div class="act-row">
       <button class="btn sm" onclick="requestRoute(${Number(s.id)})">Tính đường</button>
       <button class="btn outline sm" onclick="openGoogleMaps(${Number(s.id)})">Google Maps</button>
-      <button class="btn secondary sm" onclick="joinQueue(${Number(s.id)})" ${st === 'FAULT' || st === 'OFFLINE' ? 'disabled' : ''}>＋ Hàng chờ</button>
-    </div>`;
+      ${canJoin
+        ? `<button class="btn secondary sm" onclick="joinQueue(${Number(s.id)})">＋ Hàng chờ</button>`
+        : mine
+          ? `<button class="btn secondary sm" disabled>Đã đăng ký</button>`
+          : `<button class="btn secondary sm" disabled>Không khả dụng</button>`}
+    </div>
+    <div class="notice">Cập nhật: ${escapeHtml(updated)}</div>`;
 
   if (st === 'CHARGING') html += `<div class="notice">Trạm đang phục vụ xe khác. Thông tin phiên sạc được bảo mật.</div>`;
-  if (st === 'FAULT' || st === 'OFFLINE') html += `<div class="notice">Trạm hiện không khả dụng.</div>`;
+  if (st === 'FAULT' || st === 'OFFLINE') html += `<div class="notice">Trạm hiện không khả dụng để đăng ký hàng chờ.</div>`;
   if (c?.temporary) html += `<div class="notice">Tọa độ tham khảo, chưa xác minh chính xác.</div>`;
 
   $('detailBody').innerHTML = html;
@@ -397,6 +527,8 @@ window.selectStation = function(id) {
   showDetail(s);
   renderList();
   focusStation(id);
+  // Làm mới snapshot hàng chờ của mình nếu có
+  if (myQueues[String(id)]) refreshMyQueue(id);
 };
 
 window.setRouteMode = function(mode) {
@@ -447,7 +579,6 @@ function markerColor(s) {
 
 function createMarkerEl(s) {
   const el = document.createElement('div');
-  // Marker lớn hơn để dễ nhìn khi zoom out
   el.style.cssText = `width:36px;height:36px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);
     background:${markerColor(s)};border:3px solid #fff;box-shadow:0 3px 10px #0004;
     display:grid;place-items:center;cursor:pointer;`;
@@ -458,7 +589,6 @@ function createMarkerEl(s) {
   return el;
 }
 
-/** Fit toàn bộ trạm + đóng detail (chế độ Overview) */
 function showOverview() {
   selectedId = null;
   $('detailCard').classList.remove('show');
@@ -479,8 +609,6 @@ function showOverview() {
   } else {
     map.flyTo({ center: [106.778, 10.865], zoom: 12.5, duration: 700 });
   }
-
-  // Đóng popup marker nếu đang mở
   Object.values(markers).forEach(m => { try { m.getPopup()?.remove(); } catch (_) {} });
 }
 window.showOverview = showOverview;
@@ -506,7 +634,6 @@ function updateMarkers() {
     markers[s.id] = marker;
     bounds.push([c.lng, c.lat]);
   });
-  // Chỉ fit overview khi chưa chọn trạm (tránh tự zoom vào 1 trạm)
   if (bounds.length && selectedId === null) {
     const b = new maplibregl.LngLatBounds();
     bounds.forEach(p => b.extend(p));
@@ -540,18 +667,19 @@ function onPosition(pos) {
   updateUserMarker(lat, lng);
   $('gpsStatus').textContent = watching ? 'GPS theo dõi' : 'GPS đã lấy';
   $('gpsStatus').classList.add('on');
+  renderList();
   if (selectedId !== null && shouldRecalculateRoute()) requestRoute(selectedId);
 }
 
 function onPositionError() {
-  alert('Không lấy được GPS. Cấp quyền Location và dùng HTTPS.');
+  showToast('Không lấy được GPS. Cấp quyền Location và dùng HTTPS.', true);
   $('locateBtn').disabled = false;
   $('locateBtn').textContent = '◎ Vị trí';
   stopWatch();
 }
 
 function locateOnce() {
-  if (!navigator.geolocation) { alert('Trình duyệt không hỗ trợ GPS.'); return; }
+  if (!navigator.geolocation) { showToast('Trình duyệt không hỗ trợ GPS.', true); return; }
   $('locateBtn').disabled = true;
   $('locateBtn').textContent = '…';
   navigator.geolocation.getCurrentPosition(pos => {
@@ -598,8 +726,8 @@ async function requestRoute(stationId) {
   const s = stations.find(x => Number(x.id) === Number(stationId));
   if (!s) return;
   const c = coordsOf(s);
-  if (!c) { alert('Trạm chưa có tọa độ.'); return; }
-  if (!userPos) { alert('Chưa có vị trí. Nhấn “Vị trí” hoặc bật theo dõi GPS.'); return; }
+  if (!c) { showToast('Trạm chưa có tọa độ.', true); return; }
+  if (!userPos) { showToast('Chưa có vị trí. Nhấn “Vị trí” hoặc bật theo dõi GPS.', true); return; }
 
   const profile = routeMode === 'bike' ? 'bike' : 'driving';
   const url = `${OSRM_BASE}/route/v1/${profile}/${userPos.lng},${userPos.lat};${c.lng},${c.lat}?overview=full&geometries=geojson`;
@@ -626,7 +754,7 @@ async function requestRoute(stationId) {
     if (infoEl) infoEl.innerHTML = `<b>${formatDistance(route.distance)}</b> · <b>${formatDuration(route.duration)}</b>`;
   } catch (e) {
     if (infoEl) infoEl.innerHTML = 'Lỗi tính đường';
-    alert('Không tính được đường: ' + e.message);
+    showToast('Không tính được đường: ' + e.message, true);
   }
 }
 window.requestRoute = requestRoute;
@@ -634,7 +762,7 @@ window.requestRoute = requestRoute;
 window.openGoogleMaps = function(id) {
   const s = stations.find(x => Number(x.id) === Number(id));
   const c = s && coordsOf(s);
-  if (!c) { alert('Trạm chưa có tọa độ.'); return; }
+  if (!c) { showToast('Trạm chưa có tọa độ.', true); return; }
   const mode = routeMode === 'bike' ? 'two-wheeler' : 'driving';
   window.open(`https://www.google.com/maps/dir/?api=1&destination=${c.lat},${c.lng}&travelmode=${mode}`, '_blank', 'noopener');
 };
@@ -643,32 +771,138 @@ window.openGoogleMaps = function(id) {
 window.joinQueue = async function(id) {
   const s = stations.find(x => Number(x.id) === Number(id));
   if (!s) return;
+  const st = safeStatus(s);
+  if (st === 'FAULT' || st === 'OFFLINE') {
+    showToast('Trạm không khả dụng để đăng ký hàng chờ.', true);
+    return;
+  }
+  if (myQueues[String(id)]) {
+    showToast('Bạn đã có lượt chờ tại trạm này.');
+    return;
+  }
   if (!confirm('Tham gia hàng chờ tại ' + (s.name || 'trạm này') + '?')) return;
+
   try {
     const r = await fetch(`${API_BASE}/api/user/stations/${id}/queue`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      body: JSON.stringify({ action: 'JOIN' })
+      body: JSON.stringify({
+        action: 'JOIN',
+        guestId: getGuestId()
+      })
     });
     const d = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(d.message || `HTTP ${r.status}`);
-    alert(d.message || 'Đã gửi yêu cầu tham gia hàng chờ.');
+    if (!r.ok || d.success === false) {
+      throw new Error(d.message || d.error || ('HTTP ' + r.status));
+    }
+    const queueId = d.queueId || d.queue_id || null;
+    setMyQueue(id, {
+      queueId,
+      status: d.status || 'WAITING',
+      position: d.position ?? null,
+      stationId: Number(id),
+      updatedAt: Date.now()
+    });
+    showToast(d.message || 'Đăng ký hàng chờ thành công.');
     await loadStations();
+    const s2 = stations.find(x => Number(x.id) === Number(id));
+    if (s2) showDetail(s2);
+    startQueuePolling();
   } catch (e) {
-    alert('Chưa thể tham gia hàng chờ: ' + e.message +
-      '.\nCần bổ sung POST ở Node-RED trước khi chức năng hoạt động đầy đủ.');
+    showToast('Chưa thể tham gia: ' + e.message, true);
   }
 };
+
+window.cancelQueue = async function(id) {
+  const mine = myQueues[String(id)];
+  if (!mine || !mine.queueId) {
+    showToast('Không tìm thấy lượt chờ để hủy.', true);
+    return;
+  }
+  if (!confirm('Hủy lượt chờ tại trạm này?')) return;
+
+  try {
+    const r = await fetch(`${API_BASE}/api/user/stations/${id}/queue`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({
+        action: 'CANCEL',
+        guestId: getGuestId(),
+        entryId: mine.queueId
+      })
+    });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok || d.success === false) {
+      throw new Error(d.message || d.error || ('HTTP ' + r.status));
+    }
+    setMyQueue(id, null);
+    showToast(d.message || 'Đã hủy lượt chờ.');
+    await loadStations();
+    const s2 = stations.find(x => Number(x.id) === Number(id));
+    if (s2) showDetail(s2);
+  } catch (e) {
+    showToast('Không hủy được: ' + e.message, true);
+  }
+};
+
+async function refreshMyQueue(stationId) {
+  const mine = myQueues[String(stationId)];
+  if (!mine) return;
+  try {
+    const url = `${API_BASE}/api/user/stations/${stationId}/queue?guestId=${encodeURIComponent(getGuestId())}`;
+    const r = await fetch(url, { headers: { 'Accept': 'application/json' }, cache: 'no-store' });
+    if (!r.ok) return;
+    const d = await r.json().catch(() => ({}));
+    if (d.success === false) return;
+
+    const status = String(d.status || mine.status || 'WAITING').toUpperCase();
+    if (['COMPLETED', 'CANCELLED'].includes(status) || !d.queueId) {
+      setMyQueue(stationId, null);
+    } else {
+      setMyQueue(stationId, {
+        queueId: d.queueId || mine.queueId,
+        status,
+        position: d.position ?? mine.position,
+        stationId: Number(stationId),
+        updatedAt: Date.now()
+      });
+    }
+    if (selectedId === Number(stationId)) {
+      const s = stations.find(x => Number(x.id) === Number(stationId));
+      if (s) showDetail(s);
+    }
+    renderList();
+  } catch (_) {}
+}
+
+function startQueuePolling() {
+  if (queuePollTimer) return;
+  queuePollTimer = setInterval(() => {
+    const ids = Object.keys(myQueues);
+    if (!ids.length) {
+      clearInterval(queuePollTimer);
+      queuePollTimer = null;
+      return;
+    }
+    ids.forEach(id => refreshMyQueue(id));
+  }, QUEUE_POLL_MS);
+}
 
 /* ========== BOOT ========== */
 $('refreshBtn').addEventListener('click', loadStations);
 $('locateBtn').addEventListener('click', locateOnce);
 $('watchBtn').addEventListener('click', toggleWatch);
 $('overviewBtn').addEventListener('click', showOverview);
+$('searchInput').addEventListener('input', e => {
+  searchQuery = e.target.value || '';
+  renderList();
+});
 
+getGuestId(); // đảm bảo có guestId ngay từ đầu
 initMap();
 loadStations();
 setInterval(loadStations, REFRESH_MS);
+if (Object.keys(myQueues).length) startQueuePolling();
 </script>
 </body>
 </html>
