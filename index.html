@@ -136,7 +136,7 @@ header{background:var(--header);color:#fff;padding:10px 16px;display:flex;align-
 <header>
   <div>
     <div class="brand">EV <span>CHARGE</span></div>
-    <div class="sub">ĐỒ ÁN 08 · UTE · V4</div>
+    <div class="sub">ĐỒ ÁN 08 · UTE · V4.1</div>
   </div>
   <div class="sub">Tìm trạm sạc · Thông tin công khai</div>
 </header>
@@ -192,7 +192,16 @@ header{background:var(--header);color:#fff;padding:10px 16px;display:flex;align-
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script>
 /* ========== CONFIG ========== */
-const API_BASE = 'https://detaiso8.onrender.com';
+// API Node-RED trên Render. Có thể ghi đè bằng ?api=https://... hoặc localStorage.ev_api_base
+(function resolveApiBase() {
+  try {
+    const q = new URLSearchParams(location.search).get('api');
+    if (q && /^https?:\/\//i.test(q)) {
+      localStorage.setItem('ev_api_base', q.replace(/\/+$/, ''));
+    }
+  } catch (_) {}
+})();
+const API_BASE = (localStorage.getItem('ev_api_base') || 'https://detaiso8.onrender.com').replace(/\/+$/, '');
 const API_URL  = API_BASE + '/api/user/stations';
 const MAP_STYLE = 'https://tiles.openfreemap.org/styles/liberty';
 const OSRM_BASE = 'https://router.project-osrm.org';
@@ -268,8 +277,8 @@ function escapeHtml(v) {
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 function statusInfo(s) {
-  const conn = String(s.connectionStatus || '').toUpperCase();
-  const v = String(s.status || s.operatingStatus || 'UNKNOWN').toUpperCase();
+  const conn = String(s.connectionStatus || s.connection_status || '').toUpperCase();
+  const v = String(s.status || s.operatingStatus || s.operating_status || 'UNKNOWN').toUpperCase();
   if (conn === 'OFFLINE' || v === 'OFFLINE') return ['Ngoại tuyến', 'offline'];
   if (v === 'AVAILABLE') return ['Sẵn sàng', 'available'];
   if (v === 'CHARGING')  return ['Đang có xe sạc', 'charging'];
@@ -277,9 +286,22 @@ function statusInfo(s) {
   return ['Chưa có dữ liệu', 'unknown'];
 }
 function safeStatus(s) {
-  const conn = String(s.connectionStatus || '').toUpperCase();
+  const conn = String(s.connectionStatus || s.connection_status || '').toUpperCase();
   if (conn === 'OFFLINE') return 'OFFLINE';
-  return String(s.status || s.operatingStatus || 'UNKNOWN').toUpperCase();
+  return String(s.status || s.operatingStatus || s.operating_status || 'UNKNOWN').toUpperCase();
+}
+function hasActiveQueue(q) {
+  return !!q && ['WAITING', 'CALLED', 'SERVING'].includes(String(q.status || '').toUpperCase());
+}
+function queueRecordFromResponse(d) {
+  const item = d?.entry || d?.queue || d?.data?.entry || d?.data?.queue || d?.data || d || {};
+  return {
+    queueId: item.queueId || item.queue_id || item.entryId || item.entry_id || item.id ||
+             d?.queueId || d?.queue_id || d?.entryId || d?.entry_id || null,
+    status: item.status || d?.status || null,
+    position: item.position ?? item.queuePosition ?? item.queue_position ??
+              d?.position ?? d?.queuePosition ?? d?.queue_position ?? null
+  };
 }
 function coordsOf(s) {
   const lat = Number(s.latitude ?? s.lat);
@@ -360,17 +382,27 @@ async function loadStations() {
   $('apiState').style.color = '';
   try {
     const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), 12000);
+    const t = setTimeout(() => ctrl.abort(), 15000);
     const r = await fetch(API_URL, {
       headers: { 'Accept': 'application/json' },
       cache: 'no-store',
-      signal: ctrl.signal
+      signal: ctrl.signal,
+      mode: 'cors'
     });
     clearTimeout(t);
-    if (!r.ok) throw new Error('HTTP ' + r.status);
+    if (!r.ok) {
+      let detail = 'HTTP ' + r.status;
+      try {
+        const errBody = await r.json();
+        if (errBody && (errBody.message || errBody.error)) {
+          detail += ' · ' + (errBody.message || errBody.error);
+        }
+      } catch (_) {}
+      throw new Error(detail);
+    }
     const data = await r.json();
     stations = Array.isArray(data) ? data : (data.stations || []);
-    $('apiState').textContent = 'API OK';
+    $('apiState').textContent = 'API OK · ' + stations.length + ' trạm';
     $('apiState').style.color = '#087a56';
     renderList();
     updateMarkers();
@@ -379,10 +411,16 @@ async function loadStations() {
       if (s) showDetail(s);
     }
   } catch (e) {
-    const msg = e.name === 'AbortError' ? 'Timeout / API chậm' : e.message;
+    let msg = e.name === 'AbortError' ? 'Timeout / API chậm (Render có thể đang ngủ)' : String(e.message || e);
+    // Failed to fetch thường = CORS, HTTPS/HTTP mixed, hoặc server down
+    if (/failed to fetch|networkerror|load failed/i.test(msg)) {
+      msg = 'Không kết nối được API (CORS / mạng / server ngủ).\nAPI: ' + API_URL +
+            '\nMở web tại https://detaiso8-1.onrender.com hoặc đợi Node-RED Render thức dậy.';
+    }
     $('apiState').textContent = 'Lỗi API';
     $('apiState').style.color = '#b83232';
-    $('stationList').innerHTML = `<div class="empty">Không tải được API<br><small>${escapeHtml(msg)}</small></div>`;
+    $('stationList').innerHTML = `<div class="empty">Không tải được API<br><small style="white-space:pre-wrap">${escapeHtml(msg)}</small></div>`;
+    console.error('[EV] loadStations failed', API_URL, e);
   }
 }
 
@@ -428,8 +466,8 @@ function renderList() {
       </div>
       <div class="small">${escapeHtml(s.code || '')}${c ? (c.label ? ' · ' + escapeHtml(c.label) : '') : ' · Chưa có tọa độ'}${dist ? ' · ' + dist : ''}</div>
       <div class="meta">
-        <span>${Number(s.queueCount) || 0} chờ</span>
-        <span>${Number(s.estimatedWaitMinutes) || 0} phút</span>
+        <span>${Number(s.queueCount ?? s.queue_count) || 0} chờ</span>
+        <span>${Number(s.estimatedWaitMinutes ?? s.estimated_wait_minutes) || 0} phút</span>
         <span>${priceShort}/kWh</span>
         ${mine ? `<span style="color:#1d4ed8;font-weight:700">Bạn: ${queueStatusLabel(mine.status)}</span>` : ''}
       </div>
@@ -443,14 +481,15 @@ function showDetail(s) {
   const t = s.tariff || {};
   const st = safeStatus(s);
   const c = coordsOf(s);
-  const q = Number(s.queueCount) || 0;
-  const w = Number(s.estimatedWaitMinutes) || 0;
+  const q = Number(s.queueCount ?? s.queue_count) || 0;
+  const w = Number(s.estimatedWaitMinutes ?? s.estimated_wait_minutes) || 0;
   const cur = currentTariff(t);
   const priceText = cur.price != null ? Number(cur.price).toLocaleString('vi-VN') + ' ₫/kWh' : 'Chưa cập nhật';
   const power = (s.power_kw != null || s.power != null) ? Number(s.power_kw ?? s.power) : null;
   const updated = s.updatedAt ? new Date(s.updatedAt).toLocaleString('vi-VN') : 'Chưa cập nhật';
   const mine = myQueues[String(s.id)];
-  const canJoin = st !== 'FAULT' && st !== 'OFFLINE' && !mine;
+  const activeMine = hasActiveQueue(mine);
+  const canJoin = ['AVAILABLE', 'CHARGING'].includes(st) && !activeMine;
   const canCancel = mine && ['WAITING', 'CALLED'].includes(String(mine.status || '').toUpperCase());
 
   let html = `
@@ -481,7 +520,7 @@ function showDetail(s) {
     html += `<div class="queue-box">
       <div class="qtitle">Lượt chờ của bạn</div>
       <div class="qrow"><span>Trạng thái</span><span class="qstatus ${qs.toLowerCase()}">${escapeHtml(queueStatusLabel(qs))}</span></div>
-      <div class="qrow"><span>Vị trí</span><span>${mine.position != null ? '#' + mine.position : '—'}</span></div>
+      <div class="qrow"><span>Vị trí</span><span>${mine.position != null ? '#' + mine.position : (qs === 'CALLED' || qs === 'SERVING' ? 'Đến lượt bạn' : 'Đang cập nhật')}</span></div>
       <div class="qrow"><span>Mã lượt</span><span style="font-size:10px;word-break:break-all">${escapeHtml(mine.queueId || '—')}</span></div>
       ${canCancel ? `<button class="btn danger sm" style="width:100%;margin-top:8px" onclick="cancelQueue(${Number(s.id)})">Hủy lượt chờ</button>` : ''}
     </div>`;
@@ -507,7 +546,7 @@ function showDetail(s) {
     <div class="notice">Cập nhật: ${escapeHtml(updated)}</div>`;
 
   if (st === 'CHARGING') html += `<div class="notice">Trạm đang phục vụ xe khác. Thông tin phiên sạc được bảo mật.</div>`;
-  if (st === 'FAULT' || st === 'OFFLINE') html += `<div class="notice">Trạm hiện không khả dụng để đăng ký hàng chờ.</div>`;
+  if (!['AVAILABLE', 'CHARGING'].includes(st)) html += `<div class="notice">Trạm chưa sẵn sàng nhận đăng ký hàng chờ.</div>`;
   if (c?.temporary) html += `<div class="notice">Tọa độ tham khảo, chưa xác minh chính xác.</div>`;
 
   $('detailBody').innerHTML = html;
@@ -772,14 +811,16 @@ window.joinQueue = async function(id) {
   const s = stations.find(x => Number(x.id) === Number(id));
   if (!s) return;
   const st = safeStatus(s);
-  if (st === 'FAULT' || st === 'OFFLINE') {
-    showToast('Trạm không khả dụng để đăng ký hàng chờ.', true);
+  if (!['AVAILABLE', 'CHARGING'].includes(st)) {
+    showToast('Trạm chưa sẵn sàng nhận lượt chờ.', true);
     return;
   }
-  if (myQueues[String(id)]) {
+  if (hasActiveQueue(myQueues[String(id)])) {
     showToast('Bạn đã có lượt chờ tại trạm này.');
     return;
   }
+  // Allow a new registration after a previous queue has ended.
+  if (myQueues[String(id)]) setMyQueue(id, null);
   if (!confirm('Tham gia hàng chờ tại ' + (s.name || 'trạm này') + '?')) return;
 
   try {
@@ -795,11 +836,13 @@ window.joinQueue = async function(id) {
     if (!r.ok || d.success === false) {
       throw new Error(d.message || d.error || ('HTTP ' + r.status));
     }
-    const queueId = d.queueId || d.queue_id || null;
+    const record = queueRecordFromResponse(d);
+    const queueId = record.queueId;
+    if (!queueId) throw new Error('API chưa trả về mã lượt (queueId/entryId).');
     setMyQueue(id, {
       queueId,
-      status: d.status || 'WAITING',
-      position: d.position ?? null,
+      status: String(record.status || 'WAITING').toUpperCase(),
+      position: record.position,
       stationId: Number(id),
       updatedAt: Date.now()
     });
@@ -835,7 +878,12 @@ window.cancelQueue = async function(id) {
     if (!r.ok || d.success === false) {
       throw new Error(d.message || d.error || ('HTTP ' + r.status));
     }
-    setMyQueue(id, null);
+    setMyQueue(id, {
+      ...mine,
+      status: 'CANCELLED',
+      position: null,
+      updatedAt: Date.now()
+    });
     showToast(d.message || 'Đã hủy lượt chờ.');
     await loadStations();
     const s2 = stations.find(x => Number(x.id) === Number(id));
@@ -855,14 +903,15 @@ async function refreshMyQueue(stationId) {
     const d = await r.json().catch(() => ({}));
     if (d.success === false) return;
 
-    const status = String(d.status || mine.status || 'WAITING').toUpperCase();
-    if (['COMPLETED', 'CANCELLED'].includes(status) || !d.queueId) {
-      setMyQueue(stationId, null);
-    } else {
+    const record = queueRecordFromResponse(d);
+    // An empty/ambiguous snapshot must not erase a locally known queue.
+    const status = String(record.status || mine.status || 'WAITING').toUpperCase();
+    const queueId = record.queueId || mine.queueId;
+    if (['WAITING', 'CALLED', 'SERVING', 'COMPLETED', 'CANCELLED'].includes(status)) {
       setMyQueue(stationId, {
-        queueId: d.queueId || mine.queueId,
+        queueId,
         status,
-        position: d.position ?? mine.position,
+        position: record.position ?? mine.position ?? null,
         stationId: Number(stationId),
         updatedAt: Date.now()
       });
@@ -878,7 +927,7 @@ async function refreshMyQueue(stationId) {
 function startQueuePolling() {
   if (queuePollTimer) return;
   queuePollTimer = setInterval(() => {
-    const ids = Object.keys(myQueues);
+    const ids = Object.keys(myQueues).filter(id => hasActiveQueue(myQueues[id]));
     if (!ids.length) {
       clearInterval(queuePollTimer);
       queuePollTimer = null;
