@@ -1,14 +1,11 @@
+
 /**
  * settings.js – Node-RED 5.0.9
  * Đồ án 08: Giám sát nhiều trụ sạc xe điện qua MQTT
  *
  * - Đọc toàn bộ cấu hình từ Environment Variables
- * - Tạo flows_cred.json cho các MQTT broker config đang dùng trong flows.json
+ * - Tạo flows_cred.json cho các MQTT broker config đang dùng
  * - Không ghi cứng mật khẩu vào source
- *
- * Broker IDs được hỗ trợ (theo flows.json hiện tại):
- *   - broker_cloudamqp   (đang được tất cả MQTT In/Out sử dụng)
- *   - 476c2ac9ccb44c46   (giữ lại để tương thích nếu còn residual)
  */
 
 const crypto = require("crypto");
@@ -40,15 +37,17 @@ const encryptionKey = crypto
 
 const initVector = crypto.randomBytes(16);
 
-const cipher = crypto.createCipheriv("aes-256-ctr", encryptionKey, initVector);
+const cipher = crypto.createCipheriv(
+    "aes-256-ctr",
+    encryptionKey,
+    initVector
+);
 
 const credentials = {
-    // ID đang được tất cả mqtt in/out trong flows.json sử dụng
     "broker_cloudamqp": {
         user: mqttUsername,
         password: mqttPassword
     },
-    // ID cũ còn tồn tại trong flows.json (giữ để an toàn)
     "476c2ac9ccb44c46": {
         user: mqttUsername,
         password: mqttPassword
@@ -61,6 +60,7 @@ const encryptedCredentials =
     cipher.final("base64");
 
 const credPath = path.join(__dirname, "flows_cred.json");
+
 fs.writeFileSync(
     credPath,
     JSON.stringify({ $: encryptedCredentials }),
@@ -73,6 +73,16 @@ fs.writeFileSync(
 module.exports = {
     uiPort: process.env.PORT || 10000,
     uiHost: "0.0.0.0",
+
+    // ---------------------------------------------------
+    // CORS cho API Người dùng - Flow 4
+    // ---------------------------------------------------
+    httpNodeCors: {
+        origin: "https://detaiso8-1.onrender.com",
+        methods: "GET,HEAD,POST,OPTIONS",
+        allowedHeaders: "Content-Type,Authorization",
+        maxAge: 86400
+    },
 
     credentialSecret: credentialSecret,
 
@@ -109,6 +119,7 @@ module.exports = {
     diagnostics: {
         enabled: false
     },
+
     runtimeState: {
         enabled: false
     }
